@@ -8,10 +8,14 @@
 
 authlib-injector enables you to build a Minecraft authentication system offering all the features that genuine Minecraft has.
 
-**[See the wiki](https://yushijinhun.github.io/authlib-injector) for documents and detailed descriptions.**
+> This is a personal toy fork of [yushijinhun/authlib-injector](https://github.com/yushijinhun/authlib-injector) for personal learning and testing. It is not affiliated with or endorsed by the upstream authors. The external login GUI added here is not an upstream feature, may change at any time, and comes with no stability or compatibility guarantee. Use the upstream releases for production.
+
+This fork shows an external login dialog by default when a client starts, allowing third-party accounts to be used with the official launcher. Passwords are not stored. After login, the game username, UUID, access token and user properties are replaced automatically.
+
+**[See the wiki](https://yushijinhun.github.io/authlib-injector) for upstream documents and detailed descriptions.**
 
 ## Download
-You can download the latest authlib-injector build from [here](https://authlib-injector.yushi.moe/).
+Official upstream builds are available from the [authlib-injector website](https://authlib-injector.yushi.moe/). Builds from this repository are personal modified versions.
 
 ## Build
 Dependencies: Gradle, JDK 17+. The target Java platform version is 8.
@@ -30,6 +34,11 @@ Configure Minecraft server with the following JVM parameter:
 
 ## Options
 ```
+-Dauthlibinjector.externalLogin={true|false}
+    Show an external login dialog when starting a Minecraft client, with account/password authentication and profile selection.
+    Replace the username, UUID, access token and user properties in the game arguments after a successful login.
+    Defaults to true; set it to false explicitly for servers or headless environments. Cancelling the dialog or failing to log in aborts startup.
+
 -Dauthlibinjector.mojangNamespace={default|enabled|disabled}
     Whether to enable Mojang namespace (@mojang suffix).
     It's enabled by default if the authentication server does NOT send feature.no_mojang_namespace option.

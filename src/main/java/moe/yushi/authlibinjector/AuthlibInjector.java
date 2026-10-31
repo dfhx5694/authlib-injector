@@ -27,6 +27,7 @@ import static moe.yushi.authlibinjector.util.Logging.Level.DEBUG;
 import static moe.yushi.authlibinjector.util.Logging.Level.ERROR;
 import static moe.yushi.authlibinjector.util.Logging.Level.INFO;
 import static moe.yushi.authlibinjector.util.Logging.Level.WARNING;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -53,6 +54,10 @@ import moe.yushi.authlibinjector.httpd.QueryProfileFilter;
 import moe.yushi.authlibinjector.httpd.QueryUUIDsFilter;
 import moe.yushi.authlibinjector.httpd.URLFilter;
 import moe.yushi.authlibinjector.httpd.URLProcessor;
+import moe.yushi.authlibinjector.login.AuthenticationResult;
+import moe.yushi.authlibinjector.login.ExternalLoginController;
+import moe.yushi.authlibinjector.login.ExternalLoginDialog;
+import moe.yushi.authlibinjector.login.ExternalLoginDialog.LoginCredentials;
 import moe.yushi.authlibinjector.transform.ClassTransformer;
 import moe.yushi.authlibinjector.transform.DumpClassListener;
 import moe.yushi.authlibinjector.transform.support.AccountTypeTransformer;
@@ -63,6 +68,7 @@ import moe.yushi.authlibinjector.transform.support.BungeeCordProfileKeyTransform
 import moe.yushi.authlibinjector.transform.support.CitizensTransformer;
 import moe.yushi.authlibinjector.transform.support.ConcatenateURLTransformUnit;
 import moe.yushi.authlibinjector.transform.support.ConstantURLTransformUnit;
+import moe.yushi.authlibinjector.transform.support.ExternalLoginArgumentsTransformer;
 import moe.yushi.authlibinjector.transform.support.MC52974Workaround;
 import moe.yushi.authlibinjector.transform.support.MC52974_1710Workaround;
 import moe.yushi.authlibinjector.transform.support.MainArgumentsTransformer;
@@ -100,8 +106,38 @@ public final class AuthlibInjector {
 
 		log(INFO, "Version: " + AuthlibInjector.class.getPackage().getImplementationVersion());
 
-		APIMetadata apiMetadata = fetchAPIMetadata(apiUrl);
+		LoginCredentials loginCredentials = null;
+		AuthenticationResult authentication = null;
+		APIMetadata apiMetadata;
+		try {
+			if (Config.externalLogin) {
+				if (GraphicsEnvironment.isHeadless()) {
+					log(ERROR, "External login requires a graphical environment");
+					throw new InitializationException();
+				}
+				Optional<LoginCredentials> prompted = ExternalLoginDialog.prompt(apiUrl);
+				if (!prompted.isPresent()) {
+					log(INFO, "External login cancelled");
+					throw new InitializationException();
+				}
+				loginCredentials = prompted.get();
+				apiUrl = loginCredentials.getApiUrl();
+			}
+
+			apiMetadata = fetchAPIMetadata(apiUrl, Config.externalLogin);
+			if (loginCredentials != null) {
+				authentication = ExternalLoginController.authenticate(apiMetadata, loginCredentials);
+			}
+		} finally {
+			if (loginCredentials != null) {
+				loginCredentials.clearPassword();
+			}
+		}
+
 		classTransformer = createTransformer(apiMetadata);
+		if (authentication != null) {
+			MainArgumentsTransformer.getArgumentsListeners().add(new ExternalLoginArgumentsTransformer(authentication)::transform);
+		}
 		instrumentation.addTransformer(classTransformer, retransformSupported);
 
 		ProxyParameterWorkaround.init();
@@ -123,7 +159,7 @@ public final class AuthlibInjector {
 		return Optional.ofNullable(prefetched);
 	}
 
-	private static APIMetadata fetchAPIMetadata(String apiUrl) {
+	private static APIMetadata fetchAPIMetadata(String apiUrl, boolean ignorePrefetched) {
 		if (apiUrl == null || apiUrl.isEmpty()) {
 			log(ERROR, "No authentication server specified");
 			throw new InitializationException();
@@ -135,7 +171,7 @@ public final class AuthlibInjector {
 
 		String metadataResponse;
 
-		Optional<String> prefetched = getPrefetchedResponse();
+		Optional<String> prefetched = ignorePrefetched ? Optional.empty() : getPrefetchedResponse();
 		if (prefetched.isPresent()) {
 
 			log(DEBUG, "Prefetched metadata detected");

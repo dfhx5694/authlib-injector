@@ -74,14 +74,24 @@ public class MainArgumentsTransformer implements TransformUnit {
 
 	@CallbackMethod
 	public static String[] processMainArguments(String[] args) {
-		log(DEBUG, "Original main arguments: " + Stream.of(args).collect(joining(" ")));
+		log(DEBUG, "Original main arguments: " + formatMainArguments(args));
 
 		String[] result = args;
 		for (Function<String[], String[]> listener : ARGUMENTS_LISTENERS) {
 			result = listener.apply(result);
 		}
-		log(DEBUG, "Transformed main arguments: " + Stream.of(result).collect(joining(" ")));
+		log(DEBUG, "Transformed main arguments: " + formatMainArguments(result));
 		return result;
+	}
+
+	private static String formatMainArguments(String[] args) {
+		String[] redacted = args.clone();
+		for (int i = 0; i < redacted.length - 1; i++) {
+			if ("--accessToken".equals(redacted[i])) {
+				redacted[++i] = "<redacted>";
+			}
+		}
+		return Stream.of(redacted).collect(joining(" "));
 	}
 
 	public static List<Function<String[], String[]>> getArgumentsListeners() {

@@ -8,10 +8,14 @@
 
 通过运行时修改 authlib 实现游戏外登录，并为 Yggdrasil 服务端的实现提供规范。
 
-**关于该项目的详细介绍见 [wiki](https://yushijinhun.github.io/authlib-injector)。**
+> 这是 [yushijinhun/authlib-injector](https://github.com/yushijinhun/authlib-injector) 的个人小玩具 fork，仅供个人学习和测试，与上游作者无关，也不代表上游立场。这里新增的外置登录 GUI 不是上游功能，可能随时改动，不保证稳定或兼容所有版本；需要正式版本请使用上游发布。
+
+这个 fork 默认在客户端启动时弹出外置登录窗口，让官方启动器也能使用第三方账号。密码不会保存，登录成功后会自动替换游戏所需的角色名、UUID、访问令牌和用户属性。
+
+**关于上游项目的详细介绍见 [wiki](https://yushijinhun.github.io/authlib-injector)。**
 
 ## 获取
-您可以从[这里](https://authlib-injector.yushi.moe/)获取最新的 authlib-injector。
+上游正式版本可从 [authlib-injector 官网](https://authlib-injector.yushi.moe/)获取；本仓库构建的是个人修改版。
 
 ## 构建
 构建依赖：Gradle、JDK 17+（目标 Java 版本为 8）。
@@ -30,6 +34,11 @@ gradle
 
 ## 参数
 ```
+-Dauthlibinjector.externalLogin={true|false}
+    启动客户端时弹出外置登录窗口，使用验证服务器账号和密码登录，并在有多个角色时选择角色。
+    登录成功后，自动替换启动参数中的角色名、角色 UUID、访问令牌和用户属性。
+    默认为 true；服务器或无图形环境需显式设置为 false。取消或登录失败会终止启动。
+
 -Dauthlibinjector.noLogFile
     不要将日志输出到文件.
     默认情况下, authlib-injector 会将日志输出到控制台以及当前目录下的 authlib-injector.log 文件.

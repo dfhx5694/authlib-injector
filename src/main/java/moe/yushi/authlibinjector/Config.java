@@ -63,6 +63,7 @@ public final class Config {
 	public static FeatureOption profileKey;
 	public static FeatureOption usernameCheck;
 	public static boolean noShowServerName;
+	public static boolean externalLogin;
 	public static int httpdPort;
 
 	private static void initDebugOptions() {
@@ -183,6 +184,7 @@ public final class Config {
 		usernameCheck = parseFeatureOption("authlibinjector.usernameCheck");
 		httpdDisabled = System.getProperty("authlibinjector.disableHttpd") != null;
 		noShowServerName = System.getProperty("authlibinjector.noShowServerName") != null;
+		externalLogin = Boolean.parseBoolean(System.getProperty("authlibinjector.externalLogin", "true"));
 		httpdPort = Integer.getInteger("authlibinjector.httpdPort", 0);
 	}
 }
